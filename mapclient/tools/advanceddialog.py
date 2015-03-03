@@ -39,12 +39,219 @@ class AdvancedDialog(QDialog):
         self._makeConnections()
         self._pluginUpdater = PluginUpdater()
         self.fillList(self._pluginUpdater._pluginUpdateDict)
+        self._plugins_to_update = {}
+        self._ui.updateAllButton.setEnabled(False)
+        self._ui.updateButton.setEnabled(False)
+        self._ui.label_2.setText('Please analyse your plugins to check for updates.')
+        
+        self._updaterSettings = updater_settings
+        self.setUpdaterSettings()
+        
+        self._resourceFiles = resource_files
+        self.fillResourcesList()
+        self.resourceFilenameLineEdit()
+        
+        self._ignoredPlugins = ignored_plugins
+        self.fillIgnoreList()
+        
+        self._doNotShowErrors = do_not_show_errors
+        self.setErrorsCheckBox()
+                
+        self._2to3Directory = self._pluginUpdater.locate2to3Script()
+        if self._2to3Directory:
+            self._ui.dir2to3.setText(self._2to3Directory)
+            
+        self._pyvenvDirectory = self._pluginUpdater.locatePyenvScript()
+        if self._pyvenvDirectory:
+            self._ui.pyvenvDir.setText(self._pyvenvDirectory)
         
     def _makeConnections(self):
         self._ui.updateButton.clicked.connect(self.updatePlugins)
         self._ui.analyseButton.clicked.connect(self.analysePlugins)
         
     def fillList(self, plugin_updates_dict):
+        self._ui.updateAllButton.clicked.connect(self.updateAllPlugins)
+        self._ui.listWidget.itemSelectionChanged.connect(self._pluginSelectionChanged)
+        self._ui.dependencyUpdates.stateChanged.connect(self._showDependencyUpdates)
+        self._ui.tabWidget.currentChanged.connect(self.fillUpdatesList)
+        self._ui.locateButton.clicked.connect(self.locate2to3Script)
+        self._ui.locateButton_2.clicked.connect(self.locatePyvenvScript)
+        self._ui.indentCheckBox.stateChanged.connect(self.indentSettings)
+        self._ui.syntaxCheckBox.stateChanged.connect(self.syntaxSettings)
+        self._ui.resourceCheckBox.stateChanged.connect(self.resourceSettings)
+        self._ui.locationCheckBox.stateChanged.connect(self.locationSettings)
+        self._ui.revertButton.clicked.connect(self.revertIgnoredPlugins)
+        self._ui.showPluginErrors.stateChanged.connect(self.setShowPluginErrors)
+        self._ui.dir2to3.textEdited.connect(self.set2to3Location)
+        self._ui.ignoreList.itemSelectionChanged.connect(self._ignoredPluginSelectionChanged)
+        self._ui.lineEdit.textEdited.connect(self.resourceFilenameLineEdit)
+        self._ui.addResource.clicked.connect(self.addResourceFilename)
+        self._ui.removeResource.clicked.connect(self.removeResourceFilename)
+        self._ui.resourceList.itemSelectionChanged.connect(self._resourceFilenamesSelectionChanged)
+        self._ui.listWidget.doubleClicked.connect(self.updatePlugins)
+        
+    def _setupToolTips(self):
+        self._ui.analyseButton.setToolTip('Analyse plugins in your plugin directories for a range of updates.')
+        self._ui.removeResource.setToolTip('Delete the selected resource filename.')
+        self._ui.addResource.setToolTip('Add a resource filename.')
+        self._ui.revertButton.setToolTip('Revert previously ignored plugin errors.')
+        self._ui.ignoreList.setToolTip('Plugins with errors that have previously been ignored.')
+        self._ui.resourceList.setToolTip('List of resource filenames used in your plugins.')
+        self._ui.syntaxCheckBox.setToolTip('Enable syntax updates.')
+        self._ui.dependencyUpdates.setToolTip('Include plugin dependencies in the plugin updater.')
+        self._ui.resourceCheckBox.setToolTip('Enable resource file updates.')
+        self._ui.locationCheckBox.setToolTip('Enable location information updates.')
+        self._ui.indentCheckBox.setToolTip('Enable indentation updates.')        
+        
+    def setUpdaterSettings(self):
+        self._ui.syntaxCheckBox.setChecked(self._updaterSettings['syntax'])
+        self._ui.indentCheckBox.setChecked(self._updaterSettings['indentation'])
+        self._ui.locationCheckBox.setChecked(self._updaterSettings['location'])
+        self._ui.resourceCheckBox.setChecked(self._updaterSettings['resources'])
+        self._ui.dependencyUpdates.setChecked(self._updaterSettings['dependencies'])
+        
+    def removeResourceFilename(self):
+        revert_index = 0
+        for item in self._ui.resourceList.selectedItems():
+            for index in range(len(self._resourceFiles)):                
+                    if item.text() == self._resourceFiles[index]:
+                            revert_index = index
+                            break
+            self._resourceFiles.pop(revert_index)
+        self.fillResourcesList()
+        
+    def addResourceFilename(self):
+        if self._ui.lineEdit.text():
+            self._resourceFiles.append(self._ui.lineEdit.text())
+            self._ui.resourceList.addItem(self._ui.lineEdit.text())
+        self._ui.lineEdit.clear()
+        
+    def fillResourcesList(self):
+        self._ui.resourceList.clear()
+        if self._resourceFiles:
+            for filename in self._resourceFiles:
+                self._ui.resourceList.addItem(filename)
+                
+        self._resourceFilenamesSelectionChanged()
+        
+    def _resourceFilenamesSelectionChanged(self):
+        if self._ui.resourceList.count() == 0 or len(self._ui.resourceList.selectedItems()) == 0:
+            self._ui.removeResource.setEnabled(False)
+        else:
+            self._ui.removeResource.setEnabled(True)
+            
+    def resourceFilenameLineEdit(self):
+        if self._ui.lineEdit.text():
+            self._ui.addResource.setEnabled(True)
+        else:
+            self._ui.addResource.setEnabled(False)
+        
+    def fillIgnoreList(self):
+        self._ui.ignoreList.clear()
+        if self._ignoredPlugins:
+            for plugin in self._ignoredPlugins:
+                self._ui.ignoreList.addItem(plugin)
+                
+        self._ignoredPluginSelectionChanged()
+        
+    def setErrorsCheckBox(self):
+        self._ui.showPluginErrors.setChecked(not self._doNotShowErrors)
+        
+    def _ignoredPluginSelectionChanged(self):
+        if len(self._ui.ignoreList.selectedItems()) > 0 and len(self._ui.ignoreList.selectedItems()) != len(self._ignoredPlugins):
+            self._ui.revertButton.setText('Revert(' + str(len(self._ui.ignoreList.selectedItems())) + ')')            
+            self._ui.revertButton.setEnabled(True)
+        elif (len(self._ui.ignoreList.selectedItems()) == len(self._ignoredPlugins) or len(self._ui.ignoreList.selectedItems()) == 0) and self._ui.ignoreList.count() > 0:
+            self._ui.revertButton.setText('Revert All')
+            self._ui.revertButton.setEnabled(True)
+        else:
+            self._ui.revertButton.setText('Revert')
+            self._ui.revertButton.setEnabled(False)
+        
+    def set2to3Location(self):
+        self._2to3Directory = self._ui.dir2to3.text()
+    
+    def setPyvenvLocation(self):
+        self._pyvenvDirectory = self._ui.pyvenvDir.text()
+        
+    def setShowPluginErrors(self):
+        self._doNotShowErrors = not self._ui.showPluginErrors.isChecked()
+        
+    def revertIgnoredPlugins(self):
+        revert_index = 0
+        if len(self._ui.ignoreList.selectedItems()) == 0 and self._ui.ignoreList.count() != 0:       
+            for item_index in range(self._ui.ignoreList.count()):
+                item = self._ui.ignoreList.item(item_index)
+                for index in range(len(self._ignoredPlugins)):
+                    if item.text() == self._ignoredPlugins[index]:
+                        revert_index = index
+                        break
+                self._ignoredPlugins.pop(revert_index)
+        else:
+            for item in self._ui.ignoreList.selectedItems():
+                for index in range(len(self._ignoredPlugins)):                
+                    if item.text() == self._ignoredPlugins[index]:
+                            revert_index = index
+                            break
+                self._ignoredPlugins.pop(revert_index)
+        self.fillIgnoreList()
+        
+    def indentSettings(self):
+        self._updaterSettings['indentation'] = self._ui.indentCheckBox.isChecked()
+    
+    def syntaxSettings(self):
+        self._updaterSettings['syntax'] = self._ui.syntaxCheckBox.isChecked()
+    
+    def locationSettings(self):
+        self._updaterSettings['location'] = self._ui.locationCheckBox.isChecked()
+    
+    def resourceSettings(self):
+        self._updaterSettings['resources'] = self._ui.resourceCheckBox.isChecked()
+    
+    def dependencySettings(self):
+        self._updaterSettings['dependencies'] = self._ui.dependencyUpdates.isChecked()
+
+    def locate2to3Script(self):
+        dir2to3Script = QFileDialog.getOpenFileName(self, dir = sys.exec_prefix, filter='Python scripts (*.py *.pyw)', caption='Locate Script',  options=QFileDialog.DontResolveSymlinks | QFileDialog.ReadOnly)
+        if len(dir2to3Script[0]) > 0:
+            self._ui.dir2to3.setText(dir2to3Script[0])
+            self.set2to3Location()
+
+    def locatePyvenvScript(self):
+        dirPyvenvScript = QFileDialog.getOpenFileName(self, dir = sys.exec_prefix, filter='Python scripts (*.py *.pyw)', caption='Locate Script',  options=QFileDialog.DontResolveSymlinks | QFileDialog.ReadOnly)
+        if len(dirPyvenvScript[0]) > 0:
+            self._ui.pyvenvDir.setText(dirPyvenvScript[0])
+            self.setPyvenvLocation()
+        
+    def _pluginSelectionChanged(self):
+        if len(self._ui.listWidget.selectedItems()) > 0 and len(self._ui.listWidget.selectedItems()) < self._ui.listWidget.count():
+            self._ui.updateButton.setText('Update(' + str(len(self._ui.listWidget.selectedItems())) + ')')            
+            self._ui.updateButton.setEnabled(True)
+        elif self._ui.listWidget.count() > 0:
+            self._ui.updateAllButton.setEnabled(True)
+            self._ui.updateButton.setText('Update')
+            self._ui.updateButton.setEnabled(False)
+        else:
+            self._ui.updateAllButton.setEnabled(False)
+            self._ui.updateButton.setText('Update')
+            self._ui.updateButton.setEnabled(False)
+
+    def _showDependencyUpdates(self):
+        self._pluginUpdater._pluginUpdateDict = dict(list(self._pluginUpdater._pluginUpdateDict.items()) + list(self._pluginUpdater._dependenciesUpdateDict.items()))
+        self.dependencySettings()
+        self.fillUpdatesList()
+    
+    def check2to3Script(self):
+        if not self._2to3Directory:
+            self._ui.updateAllButton.setEnabled(False)
+            self._ui.updateButton.setEnabled(False)
+            self._ui.analyseButton.setEnabled(False)
+            return True
+        else:
+            return False       
+       
+    def fillUpdatesList(self):
+        plugin_updates_dict = self._pluginUpdater._pluginUpdateDict
         self._ui.listWidget.clear()
         location_string = 'Location Update'
         resource_string = 'Resource Update'

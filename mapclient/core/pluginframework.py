@@ -28,6 +28,7 @@ import os
 import site
 import sys
 import pkgutil
+import subprocess
 from importlib import import_module
 from mapclient.core.pluginlocationmanager import PluginLocationManager
 
@@ -333,6 +334,13 @@ class PluginManager(object):
             added = True
 
         return added
+        
+    def extractPluginDependencies(self, path):
+        setupFileDir = path[:-16] + 'setup.py'
+        if os.path.exists(setupFileDir):
+            setup_module = __import__(setupFileDir)
+            print(setup_module)
+        return ''
 
     def load(self):
         len_package_modules_prior = len(sys.modules['mapclientplugins'].__path__) if 'mapclientplugins' in sys.modules else 0
@@ -346,13 +354,13 @@ class PluginManager(object):
                 for name in sorted(names):
                     self._addPluginDir(os.path.join(directory, name))
         if len_package_modules_prior == 0:
-            package = import_module('mapclientplugins') 
+            package = import_module('mapclientplugins')
         else:
             try:
                 package = imp.reload(sys.modules['mapclientplugins'])
             except Exception:
                 package = importlib.reload(sys.modules['mapclientplugins'])
-        
+        print(package)
         self._import_errors = []
         self._type_errors = []
         self._syntax_errors = []

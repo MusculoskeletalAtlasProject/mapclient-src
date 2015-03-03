@@ -106,6 +106,37 @@ class PluginUpdater:
 
     def checkSuccessfulResourceUpdate(self, directory):
         return self.checkResourcesFileContents(directory)
+        
+    def locatePyenvScript(self):
+        # Windows
+        if os.path.isfile(os.path.join(sys.exec_prefix, 'Tools', 'scripts', 'pyvenv.py')):
+            return os.path.join(sys.exec_prefix, 'Tools', 'scripts', 'pyvenv.py')
+        # Linux and Mac
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'bin', 'pyvenv.py')):
+            return os.path.join(sys.exec_prefix, 'bin', 'pyvenv.py')
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'local', 'bin', 'pyvenv.py')):
+            return os.path.join(sys.exec_prefix, 'local', 'bin', 'pyvenv.py')
+        else:
+            return ''
+        
+    def locate2to3Script(self):
+        # Windows
+        if os.path.isfile(os.path.join(sys.exec_prefix, 'Tools', 'scripts', '2to3.py')):
+            return os.path.join(sys.exec_prefix, 'Tools', 'scripts', '2to3.py')
+        # Linux and Mac
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'bin', '2to3.py')):
+            return os.path.join(sys.exec_prefix, 'bin', '2to3.py')
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'local', 'bin', '2to3.py')):
+            return os.path.join(sys.exec_prefix, 'local', 'bin', '2to3.py')
+        else:
+            return ''
+            
+    def set2to3Dir(self, location):
+        if location:
+            self._2to3Location = location
+        
+    def get2to3Dir(self):
+        return self._2to3Location
     
     def updateSyntax(self, plugin, directory):
         # find 2to3 for the system
