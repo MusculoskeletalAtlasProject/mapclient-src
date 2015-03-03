@@ -17,7 +17,7 @@ This file is part of MAP Client. (http://launchpad.net/mapclient)
     You should have received a copy of the GNU General Public License
     along with MAP Client.  If not, see <http://www.gnu.org/licenses/>..
 '''
-import os, logging, subprocess
+import os, logging
 from PySide import QtCore, QtGui
 
 from requests.exceptions import HTTPError
@@ -37,8 +37,6 @@ from mapclient.tools.pmr.pmrtool import PMRTool
 from mapclient.tools.pmr.pmrsearchdialog import PMRSearchDialog
 from mapclient.tools.pmr.pmrhgcommitdialog import PMRHgCommitDialog
 from mapclient.widgets.importworkflowdialog import ImportWorkflowDialog
-from mapclient.application import initialiseLogLocation
-from mapclient.tools.pluginupdater import PluginUpdater
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +53,6 @@ class WorkflowWidget(QtGui.QWidget):
         self._mainWindow = mainWindow
         self._ui = Ui_WorkflowWidget()
         self._ui.setupUi(self)
-        
-        self._pluginUpdater = PluginUpdater()
 
         self._undoStack = QtGui.QUndoStack(self)
         self._undoStack.indexChanged.connect(self.undoStackIndexChanged)
@@ -306,58 +302,6 @@ class WorkflowWidget(QtGui.QWidget):
         self.dlg = PluginProgress(plugins, directory)
         self.dlg.show()        
         self.dlg.run()
-        
-    def checkRequiredDependencies(self, settings):
-        self._workflowDependencies = []
-        settings.beginGroup('Workflow Dependencies')
-        dependency_count = settings.beginReadArray('dependencies')
-        for i in range(dependency_count):
-            settings.setArrayIndex(i)
-            self._workflowDependencies.append(settings.value('dependencies'))
-        settings.endArray()
-        settings.endGroup()
-        if self._workflowDependencies:
-            return True
-        else:
-            return False
-    
-    def installPluginDependencies(self, plugin_dependencies):
-        virtEnvLocation = self.locateMAPClientVirtEnv()
-        if not virtEnvLocation:
-            self.setupMAPClientVirtEnv()
-        for dependency in self._workflowDependencies:
-            self.pipInstallDependency()
-        self.identifyDependencyUpdates(self._workflowDependencies, self.locateMAPClientVirtEnv())
-        self.updateRequiredUpdateList(self._workflowDependenciesee)
-    
-    def locateMAPClientVirtEnv(self, virtEnvDir):
-        return os.path.isdir(virtEnvDir)
-    
-    def initialiseVirtEnvLocation(self):
-        virtEnvDir = initialiseLogLocation()[:-18]
-        if virtEnvDir[-1] == '.':
-            virtEnvDir = virtEnvDir + '.pluginVirtEnv'
-        else:
-            virtEnvDir = os.path.join(virtEnvDir[-4], '.pluginVirtEnv')
-        os.mkdir(virtEnvDir)
-        return virtEnvDir
-    
-    def setupMAPClientVirtEnv(self):
-        virtEnvDir = self.initialiseVirtEnvLocation()
-        if self._pluginUpdater.locatePyenvScript():
-            try:
-                subprocess.check_call(['python', pyenvDir, virtEnvDir, 'MAPVirtEnv'])
-            except Exception as e:
-                logger.warning('Virtual environment setup failed - Dependencies cannot be installed automatically.')
-                logger.warning('Reason: ' + e)
-        else:
-            ret = QtGui.QMessageBox.warning(self, 'Script Not Found', '\nThe pyvenv.py script could not be located on your system.\nPlease locate this in the Advanced section of the Plugin Manager dialog.', QtGui.QMessageBox.Ok)
-    
-    def identifyDependencyUpdates(self, plugin_dependencies, virt_env):
-        pass
-    
-    def updateRequiredUpdateList(self, dependency_updates):
-        pass
 
     def performWorkflowChecks(self, workflowDir):
         wf = workflow._getWorkflowConfiguration(workflowDir)
@@ -529,3 +473,5 @@ class WorkflowWidget(QtGui.QWidget):
         menu_File.insertAction(lastFileMenuAction, self.action_Save)
         menu_File.insertSeparator(lastFileMenuAction)
         menu_Project.addAction(self.action_Execute)
+
+
