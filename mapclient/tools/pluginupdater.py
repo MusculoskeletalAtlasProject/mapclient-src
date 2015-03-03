@@ -114,6 +114,19 @@ class PluginUpdater:
     def checkSuccessfulResourceUpdate(self, directory):
         return self.checkResourcesFileContents(directory)
         
+            
+    def locatePyenvScript(self):
+        # Windows
+        if os.path.isfile(os.path.join(sys.exec_prefix, 'Tools', 'scripts', 'pyvenv.py')):
+            return os.path.join(sys.exec_prefix, 'Tools', 'scripts', 'pyvenv.py')
+        # Linux and Mac
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'bin', 'pyvenv.py')):
+            return os.path.join(sys.exec_prefix, 'bin', 'pyvenv.py')
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'local', 'bin', 'pyvenv.py')):
+            return os.path.join(sys.exec_prefix, 'local', 'bin', 'pyvenv.py')
+        else:
+            return ''
+        
     def locate2to3Script(self):
         # Windows
         if os.path.isfile(os.path.join(sys.exec_prefix, 'Tools', 'scripts', '2to3.py')):

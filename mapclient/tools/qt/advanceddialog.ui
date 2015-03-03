@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>450</height>
+    <height>475</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -138,8 +138,8 @@
       <attribute name="title">
        <string>Options</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
+      <layout class="QVBoxLayout" name="verticalLayout_9">
+       <item>
         <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
           <widget class="QGroupBox" name="groupBox">
@@ -348,7 +348,32 @@
          </item>
         </layout>
        </item>
-       <item row="1" column="0">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>pyvenv.py Location:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <item>
+            <widget class="QLineEdit" name="pyvenvDir"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="locateButton_2">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <widget class="QLabel" name="label_4">

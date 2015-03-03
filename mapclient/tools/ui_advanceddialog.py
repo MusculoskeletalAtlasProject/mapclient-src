@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/advanceddialog.ui'
 #
-# Created: Thu Jan 29 14:10:42 2015
+# Created: Tue Feb  3 13:50:40 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_AdvancedDialog(object):
     def setupUi(self, AdvancedDialog):
         AdvancedDialog.setObjectName("AdvancedDialog")
-        AdvancedDialog.resize(525, 450)
+        AdvancedDialog.resize(525, 475)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/mapclient/images/icon-app.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         AdvancedDialog.setWindowIcon(icon)
@@ -38,6 +38,7 @@ class Ui_AdvancedDialog(object):
         self.horizontalLayout.addItem(spacerItem)
         self.analyseButton = QtGui.QPushButton(self.updatesTab)
         self.analyseButton.setMinimumSize(QtCore.QSize(100, 0))
+        self.analyseButton.setWhatsThis("")
         self.analyseButton.setObjectName("analyseButton")
         self.horizontalLayout.addWidget(self.analyseButton)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
@@ -65,8 +66,8 @@ class Ui_AdvancedDialog(object):
         self.tabWidget.addTab(self.updatesTab, "")
         self.optionsTab = QtGui.QWidget()
         self.optionsTab.setObjectName("optionsTab")
-        self.gridLayout_2 = QtGui.QGridLayout(self.optionsTab)
-        self.gridLayout_2.setObjectName("gridLayout_2")
+        self.verticalLayout_9 = QtGui.QVBoxLayout(self.optionsTab)
+        self.verticalLayout_9.setObjectName("verticalLayout_9")
         self.horizontalLayout_7 = QtGui.QHBoxLayout()
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
         self.groupBox = QtGui.QGroupBox(self.optionsTab)
@@ -162,7 +163,22 @@ class Ui_AdvancedDialog(object):
         self.verticalLayout_6.addLayout(self.horizontalLayout_6)
         self.verticalLayout_8.addLayout(self.verticalLayout_6)
         self.horizontalLayout_7.addWidget(self.groupBox1)
-        self.gridLayout_2.addLayout(self.horizontalLayout_7, 0, 0, 1, 1)
+        self.verticalLayout_9.addLayout(self.horizontalLayout_7)
+        self.verticalLayout_5 = QtGui.QVBoxLayout()
+        self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.label_6 = QtGui.QLabel(self.optionsTab)
+        self.label_6.setObjectName("label_6")
+        self.verticalLayout_5.addWidget(self.label_6)
+        self.horizontalLayout_8 = QtGui.QHBoxLayout()
+        self.horizontalLayout_8.setObjectName("horizontalLayout_8")
+        self.pyvenvDir = QtGui.QLineEdit(self.optionsTab)
+        self.pyvenvDir.setObjectName("pyvenvDir")
+        self.horizontalLayout_8.addWidget(self.pyvenvDir)
+        self.locateButton_2 = QtGui.QPushButton(self.optionsTab)
+        self.locateButton_2.setObjectName("locateButton_2")
+        self.horizontalLayout_8.addWidget(self.locateButton_2)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_8)
+        self.verticalLayout_9.addLayout(self.verticalLayout_5)
         self.verticalLayout_4 = QtGui.QVBoxLayout()
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.label_4 = QtGui.QLabel(self.optionsTab)
@@ -177,7 +193,7 @@ class Ui_AdvancedDialog(object):
         self.locateButton.setObjectName("locateButton")
         self.horizontalLayout_5.addWidget(self.locateButton)
         self.verticalLayout_4.addLayout(self.horizontalLayout_5)
-        self.gridLayout_2.addLayout(self.verticalLayout_4, 1, 0, 1, 1)
+        self.verticalLayout_9.addLayout(self.verticalLayout_4)
         self.tabWidget.addTab(self.optionsTab, "")
         self.verticalLayout.addWidget(self.tabWidget)
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
@@ -214,6 +230,8 @@ class Ui_AdvancedDialog(object):
         self.label_5.setText(QtGui.QApplication.translate("AdvancedDialog", "Resource Filenames:", None, QtGui.QApplication.UnicodeUTF8))
         self.addResource.setText(QtGui.QApplication.translate("AdvancedDialog", "+", None, QtGui.QApplication.UnicodeUTF8))
         self.removeResource.setText(QtGui.QApplication.translate("AdvancedDialog", "-", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_6.setText(QtGui.QApplication.translate("AdvancedDialog", "pyvenv.py Location:", None, QtGui.QApplication.UnicodeUTF8))
+        self.locateButton_2.setText(QtGui.QApplication.translate("AdvancedDialog", "...", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("AdvancedDialog", "2to3.py Location:", None, QtGui.QApplication.UnicodeUTF8))
         self.locateButton.setText(QtGui.QApplication.translate("AdvancedDialog", "...", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.optionsTab), QtGui.QApplication.translate("AdvancedDialog", "Options", None, QtGui.QApplication.UnicodeUTF8))
