@@ -120,6 +120,7 @@ def winmain():
     window.show()
     
     window.showPluginErrors()
+    window._workflowWidget.updateStepTree()
     
     return app.exec_()
 

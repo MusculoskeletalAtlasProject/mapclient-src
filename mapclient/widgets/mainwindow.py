@@ -232,7 +232,7 @@ class MainWindow(QtGui.QMainWindow):
     def pluginManager(self):
         from mapclient.tools.pluginmanagerdialog import PluginManagerDialog
         pm = self._model.pluginManager()
-        dlg = PluginManagerDialog(self)
+        dlg = PluginManagerDialog(self._model.pluginManager()._ignoredPlugins, self._model.pluginManager()._doNotShowPluginErrors, self._model.pluginManager()._resourceFiles, self._model.pluginManager()._updaterSettings)
         self._pluginManagerDlg = dlg
         dlg.setDirectories(pm.directories())
         dlg.setLoadDefaultPlugins(pm.loadDefaultPlugins())
@@ -240,12 +240,17 @@ class MainWindow(QtGui.QMainWindow):
 
         dlg.setModal(True)
         if dlg.exec_():
+            self._model.pluginManager()._ignoredPlugins = dlg._ignoredPlugins
+            self._model.pluginManager()._doNotShowPluginErrors = dlg._do_not_show_plugin_errors
+            self._model.pluginManager()._resourceFiles = dlg._resource_filenames
+            self._model.pluginManager()._updaterSettings = dlg._updaterSettings
             directories_modified = pm.setDirectories(dlg.directories())
             defaults_modified = pm.setLoadDefaultPlugins(dlg.loadDefaultPlugins())
             if directories_modified or defaults_modified:
                 pm.load()
                 self._workflowWidget.updateStepTree()
             self.showPluginErrors()
+            self._workflowWidget.updateStepTree()
 
         self._pluginManagerDlg = None
 

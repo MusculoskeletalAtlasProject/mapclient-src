@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/pluginmanagerdialog.ui'
 #
-# Created: Fri Dec 12 13:40:36 2014
+# Created: Wed Jan 28 16:54:28 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -13,6 +13,9 @@ class Ui_PluginManagerDialog(object):
     def setupUi(self, PluginManagerDialog):
         PluginManagerDialog.setObjectName("PluginManagerDialog")
         PluginManagerDialog.resize(567, 496)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/mapclient/images/icon-app.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        PluginManagerDialog.setWindowIcon(icon)
         self.verticalLayout = QtGui.QVBoxLayout(PluginManagerDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.groupBox = QtGui.QGroupBox(PluginManagerDialog)
@@ -83,3 +86,4 @@ class Ui_PluginManagerDialog(object):
         self.reloadButton.setText(QtGui.QApplication.translate("PluginManagerDialog", "Reload", None, QtGui.QApplication.UnicodeUTF8))
         self.advancedButton.setText(QtGui.QApplication.translate("PluginManagerDialog", "Advanced...", None, QtGui.QApplication.UnicodeUTF8))
 
+from . import resources_rc

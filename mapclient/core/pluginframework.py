@@ -280,7 +280,11 @@ class PluginManager(object):
     def __init__(self):
         self._directories = []
         self._loadDefaultPlugins = True
+        self._doNotShowPluginErrors = False
         self._pluginLocationManager = PluginLocationManager()
+        self._ignoredPlugins = []
+        self._resourceFiles = ['resources_rc']
+        self._updaterSettings = {'syntax':True, 'indentation':True, 'location':True, 'resources':True, 'dependencies':False}
 
     def directories(self):
         return self._directories
@@ -333,6 +337,9 @@ class PluginManager(object):
             added = True
 
         return added
+        
+    def extractPluginDependencies(self, path):
+        return None
 
     def load(self):
         len_package_modules_prior = len(sys.modules['mapclientplugins'].__path__) if 'mapclientplugins' in sys.modules else 0
@@ -357,16 +364,18 @@ class PluginManager(object):
         self._type_errors = []
         self._syntax_errors = []
         self._tab_errors = []
+        self._plugin_error_directories = {}
 
         for _, modname, ispkg in pkgutil.iter_modules(package.__path__):
             if ispkg:                
                 try:
                     module = import_module('mapclientplugins.' + modname)
+                    plugin_dependencies = self.extractPluginDependencies(_.path)
                     if hasattr(module, '__version__') and hasattr(module, '__author__'):
                         logger.info('Loaded plugin \'' + modname + '\' version [' + module.__version__ + '] by ' + module.__author__)
                     if hasattr(module, '__location__') and hasattr(module, '__stepname__'):
                         logger.info('Plugin \'' + modname + '\' available from: ' + module.__location__)
-                        self._pluginLocationManager.addLoadedPluginInformation(modname, module.__stepname__, module.__author__, module.__version__, module.__location__)
+                        self._pluginLocationManager.addLoadedPluginInformation(modname, module.__stepname__, module.__author__, module.__version__, module.__location__, plugin_dependencies)
                 except Exception as e:
                     from mapclient.mountpoints.workflowstep import removeWorkflowStep
                     # call remove partially loaded plugin manually method
@@ -380,20 +389,30 @@ class PluginManager(object):
                         self._syntax_errors += [modname]
                     elif type(e) == TabError:
                         self._tab_errors += [modname]
+                    self._plugin_error_directories[modname] = _.path
                         
                     message = convertExceptionToMessage(e)
                     logger.warn('Plugin \'' + modname + '\' not loaded')
                     logger.warn('Reason: {0}'.format(message))
     
     def getPluginErrors(self):
-        return {'ImportError':self._import_errors, 'TypeError':self._type_errors, 'SyntaxError':self._syntax_errors, 'TabError':self._tab_errors}
+        return {'ImportError':self._import_errors, 'TypeError':self._type_errors, 'SyntaxError':self._syntax_errors, 'TabError':self._tab_errors, 'directories':self._plugin_error_directories}
             
     def showPluginErrorsDialog(self):
         from mapclient.widgets.pluginerrors import PluginErrors
-        dlg = PluginErrors(self.getPluginErrors())
-        dlg.setModal(True)
-        dlg.fillList()
-        dlg.exec_()
+        dlg = PluginErrors(self.getPluginErrors(), self._ignoredPlugins, self._resourceFiles, self._updaterSettings)
+        if not self._doNotShowPluginErrors:
+            dlg.setModal(True)
+            dlg.fillList()
+            dlg.exec_()
+        ignored_plugins = dlg.getIgnoredPlugins()
+        for plugin in ignored_plugins:
+            if plugin not in self._ignoredPlugins:
+                self._ignoredPlugins += [plugin]        
+        if dlg._doNotShow:
+            self._doNotShowPluginErrors = True
+        if dlg._hotfixExecuted:
+            self.load()
 
     def readSettings(self, settings):
         self._directories = []
@@ -403,6 +422,33 @@ class PluginManager(object):
         for i in range(directory_count):
             settings.setArrayIndex(i)
             self._directories.append(settings.value('directory'))
+        settings.endArray()
+        settings.endGroup()
+        settings.beginGroup('Ignored Plugins')
+        plugin_count = settings.beginReadArray('plugins')
+        for i in range(plugin_count):
+            settings.setArrayIndex(i)
+            self._ignoredPlugins.append(settings.value('plugins'))
+        settings.endArray()
+        settings.endGroup()
+        settings.beginGroup('Resource Filenames')
+        filename_count = settings.beginReadArray('filenames')
+        for i in range(filename_count):
+            settings.setArrayIndex(i)
+            if settings.value('filenames') not in self._resourceFiles:
+                self._resourceFiles.append(settings.value('filenames'))
+        settings.endArray()
+        settings.endGroup()
+        settings.beginGroup('Updater Settings')
+        option_count = settings.beginReadArray('settings')
+        for i in range(option_count):
+            settings.setArrayIndex(i)
+            bool_str = settings.value('settings').split(' - ')[-1]
+            if bool_str == 'True':
+                bool_str = True
+            else:
+                bool_str = False
+            self._updaterSettings[settings.value('settings').split(' - ')[0]] = bool_str
         settings.endArray()
         settings.endGroup()
 
@@ -415,6 +461,33 @@ class PluginManager(object):
             settings.setArrayIndex(directory_index)
             settings.setValue('directory', directory)
             directory_index += 1
+        settings.endArray()
+        settings.endGroup()
+        settings.beginGroup('Ignored Plugins')
+        settings.beginWriteArray('plugins')
+        plugin_index = 0
+        for plugin in self._ignoredPlugins:
+            settings.setArrayIndex(plugin_index)
+            settings.setValue('plugins', plugin)
+            plugin_index += 1
+        settings.endArray()
+        settings.endGroup()
+        settings.beginGroup('Resource Filenames')
+        settings.beginWriteArray('filenames')
+        filename_index = 0
+        for filename in self._resourceFiles:
+            settings.setArrayIndex(filename_index)
+            settings.setValue('filenames', filename)
+            filename_index += 1
+        settings.endArray()
+        settings.endGroup()
+        settings.beginGroup('Updater Settings')
+        settings.beginWriteArray('settings')
+        option_index = 0
+        for setting in self._updaterSettings:
+            settings.setArrayIndex(option_index)
+            settings.setValue('settings', setting + ' - ' + str(self._updaterSettings[setting]))
+            option_index += 1
         settings.endArray()
         settings.endGroup()
 

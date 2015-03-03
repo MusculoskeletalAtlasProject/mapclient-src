@@ -302,9 +302,29 @@ class WorkflowWidget(QtGui.QWidget):
         self.dlg = PluginProgress(plugins, directory)
         self.dlg.show()        
         self.dlg.run()
+        
+    def checkRequiredDependencies(self, settings):
+        pass
+    
+    def installPluginDependencies(self, plugin_dependencies):
+        pass
+    
+    def locateMAPClientVirtEnv(self):
+        pass
+    
+    def setupMAPClientVirtEnv(self):
+        pass
+    
+    def identifyDependencyUpdates(self, plugin_dependencies, virt_env):
+        pass
+    
+    def updateRequiredUpdateList(self, dependency_updates):
+        pass
 
     def performWorkflowChecks(self, workflowDir):
         wf = workflow._getWorkflowConfiguration(workflowDir)
+        if self.checkRequiredDependencies(wf):
+            self.installPluginDependencies(plugin_dependencies)
         plugins = self.checkRequiredPlugins(wf)
         if plugins:
             QtGui.QApplication.restoreOverrideCursor()

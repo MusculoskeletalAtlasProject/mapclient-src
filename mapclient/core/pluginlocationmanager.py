@@ -39,16 +39,18 @@ class PluginLocationManager:
                 ws.setValue('author', information_dict['author'])
                 ws.setValue('version', information_dict['version'])
                 ws.setValue('location', information_dict['location'])
+                ws.setValue('dependencies', information_dict['dependencies'])
                 pluginIndex += 1
         ws.endArray()
         ws.endGroup()
         
-    def addLoadedPluginInformation(self, plugin_name, step_name, plugin_author, plugin_version, plugin_location):
+    def addLoadedPluginInformation(self, plugin_name, step_name, plugin_author, plugin_version, plugin_location, plugin_dependencies):
         plugin_dict = {}
         plugin_dict['plugin name'] = plugin_name
         plugin_dict['author'] = plugin_author
         plugin_dict['version'] = plugin_version
         plugin_dict['location'] = plugin_location
+        plugin_dict['dependencies'] = plugin_dependencies
         self._plugin_database[step_name] = plugin_dict
         
     def getPluginDatabase(self):

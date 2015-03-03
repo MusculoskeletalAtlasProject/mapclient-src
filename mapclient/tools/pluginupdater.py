@@ -63,8 +63,13 @@ class PluginUpdater:
     
     def __init__(self, parent=None):
         self._pluginUpdateDict = {}
+        self._dependenciesUpdateDict = {}
         self._directory = ''
         self._successful_plugin_update = {'init_update_success':False, 'resources_update_success':False, 'syntax_update_success':False, 'indentation_update_sucess':False}
+        self._2to3Location = self.locate2to3Script()
+        
+    def analyseDependencies(self, dependencies, directories):
+        pass
     
     def updateInitContents(self, plugin, directory):
         if plugin in MAPCLIENT_PLUGIN_LOCATIONS:
@@ -87,29 +92,50 @@ class PluginUpdater:
     def checkSuccessfulInitUpdate(self, directory):
         return self.checkPluginInitContents(directory)
 
-    def updateResourcesFile(self, plugin, directory):
-        with open(directory, 'r') as oldResourceFile:
-            contents = oldResourceFile.readlines()
-        with open(directory, 'w') as newResourceFile:
-            for line in contents:
-                if 'qt_resource_data = ' in line or 'qt_resource_name = ' in line or 'qt_resource_struct = ' in line:
-                    line = line.split(' = ')
-                    line = line[0] + ' = b' + line[1]
-                newResourceFile.write(line)
-        
-        fail_resource = self.checkSuccessfulResourceUpdate(self._pluginUpdateDict[plugin][6])
-        if not fail_resource:
-            logger.info('resources_rc.py file for \'' + plugin + '\' updated successfully.')
-            self._successful_plugin_update['resources_update_success'] = True
-        else:
-            logger.debug('There was a problem updating the \'' + plugin + '\' resources_rc.py file.')
+    def updateResourcesFile(self, plugin, directories):
+        for directory in directories:
+            filename = directory.split('\\')[-1]
+            with open(directory, 'r') as oldResourceFile:
+                contents = oldResourceFile.readlines()
+            with open(directory, 'w') as newResourceFile:
+                for line in contents:
+                    if 'qt_resource_data = ' in line or 'qt_resource_name = ' in line or 'qt_resource_struct = ' in line:
+                        line = line.split(' = ')
+                        line = line[0] + ' = b' + line[1]
+                    newResourceFile.write(line)
+            
+            fail_resource = self.checkSuccessfulResourceUpdate(directory)
+            if not fail_resource:
+                logger.info(filename + ' file for \'' + plugin + '\' updated successfully.')
+                self._successful_plugin_update['resources_update_success'] = True
+            else:
+                logger.debug('There was a problem updating the \'' + plugin + '\'' + filename + ' file.')
 
     def checkSuccessfulResourceUpdate(self, directory):
         return self.checkResourcesFileContents(directory)
+        
+    def locate2to3Script(self):
+        # Windows
+        if os.path.isfile(os.path.join(sys.exec_prefix, 'Tools', 'scripts', '2to3.py')):
+            return os.path.join(sys.exec_prefix, 'Tools', 'scripts', '2to3.py')
+        # Linux and Mac
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'bin', '2to3.py')):
+            return os.path.join(sys.exec_prefix, 'bin', '2to3.py')
+        elif os.path.isfile(os.path.join(sys.exec_prefix, 'local', 'bin', '2to3.py')):
+            return os.path.join(sys.exec_prefix, 'local', 'bin', '2to3.py')
+        else:
+            return ''
+            
+    def set2to3Dir(self, location):
+        if location:
+            self._2to3Location = location
+        
+    def get2to3Dir(self):
+        return self._2to3Location
     
     def updateSyntax(self, plugin, directory):
         # find 2to3 for the system
-        dir_2to3 = os.path.join(sys.exec_prefix, 'tools', 'scripts', '2to3.py')
+        dir_2to3 = self.get2to3Dir()
         file_out = open(initialiseLogLocation()[:-18] + 'syntax_update_report_' + plugin + '.log', 'w')
         try:
             subprocess.check_call(['python', dir_2to3, '--output-dir=' + directory, '-W', '-v', '-n', '-w', directory], stdout = file_out, stderr = file_out)
@@ -148,41 +174,32 @@ class PluginUpdater:
         if not ('__stepname__' in contents and '__location__' in contents):
             return True
         return False
-        
-    def searchDirectory(self, directory):
-        package = []
-        resources_path = ''
-        found = False
-        names = os.listdir(directory)
-        for name in names:
-            package += [os.path.join(directory, name)]
-            if 'resources_rc' in name:
-                resources_path = os.path.join(directory, name)
-                found = True
-        return package, found, resources_path
+
+    def checkResourcesUpdate(self, directory, resource_files):
+        resource_updates = False
+        requires_update = []
+        directories = []
+        for filename in resource_files:
+            for dirpath, dirnames, filenames in os.walk(directory):
+                if filename + '.py' in filenames:
+                    directories += [os.path.join(dirpath, filename + '.py')]
+                    requires_update += [self.checkResourcesFileContents(os.path.join(dirpath, filename + '.py'))]
+                    if not requires_update:
+                        directories.pop()
+        if True in requires_update:
+            resource_updates = True
+        return resource_updates, directories
         
     def checkResourcesFileContents(self, resources_path):
-        if len(resources_path):
-            with open(resources_path, 'r') as resourcesFile:
-                content = resourcesFile.readlines()
-                for line in content:
-                    if 'qt_resource_data = ' in line:
-                        line_content = line.split(' = ')
-                        data = line_content[1]
-                        if data[0] != 'b' and sys.version_info > (3, 0):
-                            return True                
+        with open(resources_path, 'r') as resourcesFile:
+                    content = resourcesFile.readlines()
+                    for line in content:
+                        if 'qt_resource_data = ' in line:
+                            line_content = line.split(' = ')
+                            data = line_content[1]
+                            if data[0] != 'b' and sys.version_info >= (3, 0):
+                                return True
         return False
-
-    def checkResourcesUpdate(self, directory):
-        package, found, resources_path = self.searchDirectory(directory)
-        if not found:
-            for _, modname, ispkg in pkgutil.iter_modules(package):
-                package, found, resources_path = self.searchDirectory(_.path)
-                if found:
-                    break
-            return self.checkResourcesFileContents(resources_path), resources_path
-        else:
-            return self.checkResourcesFileContents(resources_path), resources_path
 
     def pluginUpdateDict(self, modname, update_init, update_resources, update_syntax, update_indentation, initDir, resourcesDir, tabbed_modules):
         self._pluginUpdateDict[modname] = [self._directory, update_init, update_resources, update_syntax, update_indentation, initDir, resourcesDir, tabbed_modules]
@@ -201,7 +218,7 @@ class PluginUpdater:
             try:
                 py_compile.compile(module, doraise = True)
             except Exception as e:
-                if e.exc_type_name == 'SyntaxError':
+                if e.exc_type_name == 'SyntaxError' and sys.version_info >= (3, 0):
                     return True
         return False                
         

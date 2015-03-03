@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Plugin Manager</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../widgets/qt/resources.qrc">
+    <normaloff>:/mapclient/images/icon-app.png</normaloff>:/mapclient/images/icon-app.png</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="groupBox">
@@ -140,7 +144,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../widgets/qt/resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
