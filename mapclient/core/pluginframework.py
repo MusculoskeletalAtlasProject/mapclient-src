@@ -285,6 +285,7 @@ class PluginManager(object):
         self._doNotShowPluginErrors = False
         self._pluginLocationManager = PluginLocationManager()
         self._ignoredPlugins = []
+        self._unsuccessful_package_installations = {}
         self._resourceFiles = ['resources_rc']
         self._updaterSettings = {'syntax':True, 'indentation':True, 'location':True, 'resources':True}
 

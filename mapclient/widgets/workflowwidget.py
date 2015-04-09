@@ -295,7 +295,7 @@ class WorkflowWidget(QtGui.QWidget):
         dlg.setModal(True)
         if dlg.exec_():
             if dlg._downloadDependencies:
-                self.installPluginDependencies(dependencies)
+                self._mainWindow.model().pluginManager()._unsuccessful_package_installations = self.installPluginDependencies(dependencies)
             if dlg._downloadPlugins:
                 directory = QtGui.QFileDialog.getExistingDirectory(caption='Select Plugin Directory', dir = '', options=QtGui.QFileDialog.ShowDirsOnly | QtGui.QFileDialog.DontResolveSymlinks)
                 if directory != '':
@@ -329,22 +329,18 @@ class WorkflowWidget(QtGui.QWidget):
             for dependency in plugin_dependencies[plugin]:
                 if dependency not in dependencies:
                     dependencies += [dependency]
-        unsuccuessful_installs = self.pipInstallDependency(dependencies)
+        unsuccessful_installs = self.pipInstallDependency(dependencies)
+        return unsuccessful_installs        
         
     def pipInstallDependency(self, dependencies):
+        from mapclient.widgets.dependency_installation import Install_Dependencies
         QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
-        unsuccessful_installs = {}
-        for dependency in dependencies:
-            try:
-                with open(initialiseLogLocation()[:-18] + 'dependency_install_report_' + dependency + '.log', 'w') as file_out:
-                    subprocess.check_call([self.getVirtEnvLocation() + '\Scripts' + '\python.exe', self.getVirtEnvLocation() + '\Scripts' + '\pip.exe', 'install', dependency], stderr = file_out, stdout = file_out, shell=True)
-            except Exception as e:
-                unsuccessful_installs[dependency] = convertExceptionToMessage(e)
-                logger.warning('"' + dependency + '" dependency could not be installed.')
-                logger.warning('Reason: ' + unsuccessful_installs[dependency])
-        QtGui.QApplication.restoreOverrideCursor()
+        self.installer = Install_Dependencies(dependencies, self.getVirtEnvLocation())
+        self.installer.show()
+        unsuccessful_installs = self.installer.run()
+        self.installer.close()
         if unsuccessful_installs.keys():
-            QtGui.QMessageBox.critical(self, 'Failed Installation', 'One or more of the required dependencies could not be installed.\nPlease refer to the program logs for more information.', QtGui.QMessageBox.Ok)
+           QtGui.QMessageBox.critical(self, 'Failed Installation', 'One or more of the required dependencies could not be installed.\nPlease refer to the program logs for more information.', QtGui.QMessageBox.Ok)
         return unsuccessful_installs
     
     def locateMAPClientVirtEnv(self, virtEnvDir):
