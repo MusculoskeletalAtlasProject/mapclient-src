@@ -388,6 +388,9 @@ class WorkflowWidget(QtGui.QWidget):
     def setupVEQuery(self):
         msgBox = QtGui.QMessageBox()
         msgBox.setWindowTitle('Application Virtual Environment')
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/mapclient/images/icon-app.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        msgBox.setWindowIcon(icon)
         msgBox.setText('In order to install plugin dependencies a virtual environment\nneeds to be set up for MAP Client.\n\nWould you like to set it up now?')
         msgBox.setIcon(QtGui.QMessageBox.Question)
         yesButton = msgBox.addButton('Yes', QtGui.QMessageBox.AcceptRole)

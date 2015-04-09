@@ -286,7 +286,7 @@ class PluginManager(object):
         self._pluginLocationManager = PluginLocationManager()
         self._ignoredPlugins = []
         self._resourceFiles = ['resources_rc']
-        self._updaterSettings = {'syntax':True, 'indentation':True, 'location':True, 'resources':True, 'dependencies':False}
+        self._updaterSettings = {'syntax':True, 'indentation':True, 'location':True, 'resources':True}
 
     def directories(self):
         return self._directories

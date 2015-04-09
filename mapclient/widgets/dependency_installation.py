@@ -53,6 +53,7 @@ class VESetup(PluginProgress):
         QtGui.QDialog.__init__(self, parent)
         self._ui = Ui_DownloadProgress()
         self._ui.setupUi(self)
+        self.setWindowTitle('Virtual Environment')
         self._ui.cancelDownload.setText('Ok')
         self._ui.progressBar.setValue(0)
         self._ui.progressBar.setMaximum(100)

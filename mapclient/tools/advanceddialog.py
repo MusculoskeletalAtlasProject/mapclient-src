@@ -70,7 +70,6 @@ class AdvancedDialog(QDialog):
         self._ui.analyseButton.clicked.connect(self.analysePlugins)
         self._ui.updateAllButton.clicked.connect(self.updateAllPlugins)
         self._ui.listWidget.itemSelectionChanged.connect(self._pluginSelectionChanged)
-        self._ui.dependencyUpdates.stateChanged.connect(self._showDependencyUpdates)
         self._ui.tabWidget.currentChanged.connect(self.fillUpdatesList)
         self._ui.locateButton.clicked.connect(self.locate2to3Script)
         self._ui.locateButton_2.clicked.connect(self.locatePyvenvScript)
@@ -96,7 +95,6 @@ class AdvancedDialog(QDialog):
         self._ui.ignoreList.setToolTip('Plugins with errors that have previously been ignored.')
         self._ui.resourceList.setToolTip('List of resource filenames used in your plugins.')
         self._ui.syntaxCheckBox.setToolTip('Enable syntax updates.')
-        self._ui.dependencyUpdates.setToolTip('Include plugin dependencies in the plugin updater.')
         self._ui.resourceCheckBox.setToolTip('Enable resource file updates.')
         self._ui.locationCheckBox.setToolTip('Enable location information updates.')
         self._ui.indentCheckBox.setToolTip('Enable indentation updates.')        
@@ -106,7 +104,6 @@ class AdvancedDialog(QDialog):
         self._ui.indentCheckBox.setChecked(self._updaterSettings['indentation'])
         self._ui.locationCheckBox.setChecked(self._updaterSettings['location'])
         self._ui.resourceCheckBox.setChecked(self._updaterSettings['resources'])
-        self._ui.dependencyUpdates.setChecked(self._updaterSettings['dependencies'])
         
     def removeResourceFilename(self):
         revert_index = 0
@@ -205,9 +202,6 @@ class AdvancedDialog(QDialog):
     
     def resourceSettings(self):
         self._updaterSettings['resources'] = self._ui.resourceCheckBox.isChecked()
-    
-    def dependencySettings(self):
-        self._updaterSettings['dependencies'] = self._ui.dependencyUpdates.isChecked()
 
     def locate2to3Script(self):
         dir2to3Script = QFileDialog.getOpenFileName(self, dir = sys.exec_prefix, filter='Python scripts (*.py *.pyw)', caption='Locate Script',  options=QFileDialog.DontResolveSymlinks | QFileDialog.ReadOnly)
