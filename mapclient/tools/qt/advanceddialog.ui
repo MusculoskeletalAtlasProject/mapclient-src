@@ -256,16 +256,6 @@
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QCheckBox" name="dependencyUpdates">
-                <property name="text">
-                 <string>Include dependency updates</string>
-                </property>
-                <property name="checked">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
              </layout>
             </item>
             <item>

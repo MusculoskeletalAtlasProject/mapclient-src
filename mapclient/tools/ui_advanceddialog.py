@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qt/advanceddialog.ui'
 #
-# Created: Tue Feb  3 13:50:40 2015
+# Created: Thu Apr  9 16:43:00 2015
 #      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -121,10 +121,6 @@ class Ui_AdvancedDialog(object):
         self.locationCheckBox.setChecked(True)
         self.locationCheckBox.setObjectName("locationCheckBox")
         self.verticalLayout_7.addWidget(self.locationCheckBox)
-        self.dependencyUpdates = QtGui.QCheckBox(self.groupBox1)
-        self.dependencyUpdates.setChecked(False)
-        self.dependencyUpdates.setObjectName("dependencyUpdates")
-        self.verticalLayout_7.addWidget(self.dependencyUpdates)
         self.verticalLayout_8.addLayout(self.verticalLayout_7)
         self.verticalLayout_6 = QtGui.QVBoxLayout()
         self.verticalLayout_6.setObjectName("verticalLayout_6")
@@ -226,7 +222,6 @@ class Ui_AdvancedDialog(object):
         self.indentCheckBox.setText(QtGui.QApplication.translate("AdvancedDialog", "Indentation updates", None, QtGui.QApplication.UnicodeUTF8))
         self.resourceCheckBox.setText(QtGui.QApplication.translate("AdvancedDialog", "Resource updates", None, QtGui.QApplication.UnicodeUTF8))
         self.locationCheckBox.setText(QtGui.QApplication.translate("AdvancedDialog", "Location updates", None, QtGui.QApplication.UnicodeUTF8))
-        self.dependencyUpdates.setText(QtGui.QApplication.translate("AdvancedDialog", "Include dependency updates", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("AdvancedDialog", "Resource Filenames:", None, QtGui.QApplication.UnicodeUTF8))
         self.addResource.setText(QtGui.QApplication.translate("AdvancedDialog", "+", None, QtGui.QApplication.UnicodeUTF8))
         self.removeResource.setText(QtGui.QApplication.translate("AdvancedDialog", "-", None, QtGui.QApplication.UnicodeUTF8))

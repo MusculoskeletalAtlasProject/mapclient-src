@@ -27,6 +27,7 @@ import logging
 import os
 import site
 import sys
+import json
 import pkgutil
 import subprocess
 from importlib import import_module
@@ -341,10 +342,31 @@ class PluginManager(object):
         
     def extractPluginDependencies(self, path):
         setupFileDir = path[:-16] + 'setup.py'
+        dependencies = ''
         if os.path.exists(setupFileDir):
-            setup_module = __import__(setupFileDir)
-            print(setup_module)
-        return ''
+            with open(setupFileDir, 'r') as setup_file:
+                contents = setup_file.readlines()
+                for line in contents:
+                    if dependencies and ']' not in dependencies:
+                        if ']' in line:
+                            dependencies = dependencies.strip('\n') + line.lstrip()
+                            break
+                        else:
+                            dependencies = dependencies.strip('\n') + line.lstrip()
+                            continue
+                    if 'dependencies' in line:
+                        index = 0
+                        for char in line:
+                            index += 1
+                            if char == '[':
+                                break
+                        dependencies = line[index-1:]
+            if "'" in dependencies:
+                dependencies = dependencies.replace("'", '"')
+            if dependencies:
+                return json.loads(dependencies)
+            else:
+                return []
 
     def load(self):
         len_package_modules_prior = len(sys.modules['mapclientplugins'].__path__) if 'mapclientplugins' in sys.modules else 0
@@ -364,7 +386,6 @@ class PluginManager(object):
                 package = imp.reload(sys.modules['mapclientplugins'])
             except Exception:
                 package = importlib.reload(sys.modules['mapclientplugins'])
-        print(package)
         self._import_errors = []
         self._type_errors = []
         self._syntax_errors = []

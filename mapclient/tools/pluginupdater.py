@@ -149,14 +149,14 @@ class PluginUpdater:
     def updateSyntax(self, plugin, directory):
         # find 2to3 for the system
         dir_2to3 = self.get2to3Dir()
-        file_out = open(initialiseLogLocation()[:-18] + 'syntax_update_report_' + plugin + '.log', 'w')
-        try:
-            subprocess.check_call(['python', dir_2to3, '--output-dir=' + directory, '-W', '-v', '-n', '-w', directory], stdout = file_out, stderr = file_out)
-            logger.info('Syntax update for \'' + plugin + '\' successful.')
-            self._successful_plugin_update['syntax_update_success'] = True
-        except Exception as e:                            
-            logger.warn('Syntax update for \'' + plugin + '\' unsuccessful.')
-            logger.warn('Reason: ' + e)
+        with open(initialiseLogLocation()[:-18] + 'syntax_update_report_' + plugin + '.log', 'w') as file_out:
+            try:
+                subprocess.check_call(['python', dir_2to3, '--output-dir=' + directory, '-W', '-v', '-n', '-w', directory], stdout = file_out, stderr = file_out)
+                logger.info('Syntax update for \'' + plugin + '\' successful.')
+                self._successful_plugin_update['syntax_update_success'] = True
+            except Exception as e:                            
+                logger.warn('Syntax update for \'' + plugin + '\' unsuccessful.')
+                logger.warn('Reason: ' + e)
     
     def fixTabbedIndentation(self, plugin, directories, temp_file):
         for moduleDir in directories:

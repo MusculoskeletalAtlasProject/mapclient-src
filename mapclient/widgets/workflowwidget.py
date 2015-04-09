@@ -17,7 +17,7 @@ This file is part of MAP Client. (http://launchpad.net/mapclient)
     You should have received a copy of the GNU General Public License
     along with MAP Client.  If not, see <http://www.gnu.org/licenses/>..
 '''
-import os, logging, subprocess
+import os, logging, subprocess, sys
 from PySide import QtCore, QtGui
 
 from requests.exceptions import HTTPError
@@ -38,7 +38,8 @@ from mapclient.tools.pmr.pmrsearchdialog import PMRSearchDialog
 from mapclient.tools.pmr.pmrhgcommitdialog import PMRHgCommitDialog
 from mapclient.widgets.importworkflowdialog import ImportWorkflowDialog
 from mapclient.application import initialiseLogLocation
-from mapclient.tools.pluginupdater import PluginUpdater
+from mapclient.tools.pluginupdater import PluginUpdater    
+from mapclient.core.utils import convertExceptionToMessage
 
 logger = logging.getLogger(__name__)
 
@@ -286,20 +287,24 @@ class WorkflowWidget(QtGui.QWidget):
                 required_plugins[plugin] = pluginDict[plugin]
         return required_plugins
         
-    def showDownloadableContent(self, plugins):
+    def showDownloadableContent(self, plugins, dependencies):
         from mapclient.widgets.plugindownloader import PluginDownloader
         dlg = PluginDownloader()
-        dlg.fillTable(plugins)
+        dlg.fillPluginTable(plugins)
+        dlg.fillDependenciesTable(dependencies)
         dlg.setModal(True)
         if dlg.exec_():
-            directory = QtGui.QFileDialog.getExistingDirectory(caption='Select Plugin Directory', dir = '', options=QtGui.QFileDialog.ShowDirsOnly | QtGui.QFileDialog.DontResolveSymlinks)
-            if directory != '':
-                pm = self._mainWindow.model().pluginManager()
-                pluginDirs = pm.directories()
-                if directory not in pluginDirs:
-                    pluginDirs.append(directory)
-                    pm.setDirectories(pluginDirs)
-                self.downloadPlugins(plugins, directory)
+            if dlg._downloadDependencies:
+                self.installPluginDependencies(dependencies)
+            if dlg._downloadPlugins:
+                directory = QtGui.QFileDialog.getExistingDirectory(caption='Select Plugin Directory', dir = '', options=QtGui.QFileDialog.ShowDirsOnly | QtGui.QFileDialog.DontResolveSymlinks)
+                if directory != '':
+                    pm = self._mainWindow.model().pluginManager()
+                    pluginDirs = pm.directories()
+                    if directory not in pluginDirs:
+                        pluginDirs.append(directory)
+                        pm.setDirectories(pluginDirs)
+                    self.downloadPlugins(plugins, directory)
             
     def downloadPlugins(self, plugins, directory):
         from mapclient.widgets.pluginprogress import PluginProgress
@@ -308,65 +313,119 @@ class WorkflowWidget(QtGui.QWidget):
         self.dlg.run()
         
     def checkRequiredDependencies(self, settings):
-        self._workflowDependencies = []
-        settings.beginGroup('Workflow Dependencies')
-        dependency_count = settings.beginReadArray('dependencies')
-        for i in range(dependency_count):
+        self._workflowDependencies = {}
+        settings.beginGroup('required_plugins')
+        plugin_count = settings.beginReadArray('plugin')
+        for i in range(plugin_count):
             settings.setArrayIndex(i)
-            self._workflowDependencies.append(settings.value('dependencies'))
+            self._workflowDependencies[settings.value('name')] = settings.value('dependencies').split(' -- ')
         settings.endArray()
         settings.endGroup()
-        if self._workflowDependencies:
-            return True
-        else:
-            return False
+        return self._workflowDependencies
     
     def installPluginDependencies(self, plugin_dependencies):
-        virtEnvLocation = self.locateMAPClientVirtEnv()
-        if not virtEnvLocation:
-            self.setupMAPClientVirtEnv()
-        for dependency in self._workflowDependencies:
-            self.pipInstallDependency()
-        self.identifyDependencyUpdates(self._workflowDependencies, self.locateMAPClientVirtEnv())
-        self.updateRequiredUpdateList(self._workflowDependenciesee)
+        dependencies = []
+        for plugin in plugin_dependencies:
+            for dependency in plugin_dependencies[plugin]:
+                if dependency not in dependencies:
+                    dependencies += [dependency]
+        unsuccuessful_installs = self.pipInstallDependency(dependencies)
+        
+    def pipInstallDependency(self, dependencies):
+        QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+        unsuccessful_installs = {}
+        for dependency in dependencies:
+            try:
+                with open(initialiseLogLocation()[:-18] + 'dependency_install_report_' + dependency + '.log', 'w') as file_out:
+                    subprocess.check_call([self.getVirtEnvLocation() + '\Scripts' + '\python.exe', self.getVirtEnvLocation() + '\Scripts' + '\pip.exe', 'install', dependency], stderr = file_out, stdout = file_out, shell=True)
+            except Exception as e:
+                unsuccessful_installs[dependency] = convertExceptionToMessage(e)
+                logger.warning('"' + dependency + '" dependency could not be installed.')
+                logger.warning('Reason: ' + unsuccessful_installs[dependency])
+        QtGui.QApplication.restoreOverrideCursor()
+        if unsuccessful_installs.keys():
+            QtGui.QMessageBox.critical(self, 'Failed Installation', 'One or more of the required dependencies could not be installed.\nPlease refer to the program logs for more information.', QtGui.QMessageBox.Ok)
+        return unsuccessful_installs
     
     def locateMAPClientVirtEnv(self, virtEnvDir):
-        return os.path.isdir(virtEnvDir)
+        virtEnvDir = os.path.join(virtEnvDir, 'Scripts', 'activate.bat')
+        return os.path.exists(virtEnvDir)
     
-    def initialiseVirtEnvLocation(self):
+    def getVirtEnvLocation(self):
         virtEnvDir = initialiseLogLocation()[:-18]
         if virtEnvDir[-1] == '.':
             virtEnvDir = virtEnvDir + '.pluginVirtEnv'
         else:
-            virtEnvDir = os.path.join(virtEnvDir[-4], '.pluginVirtEnv')
-        os.mkdir(virtEnvDir)
+            virtEnvDir = os.path.join(virtEnvDir[:-5], 'pluginVirtEnv')
+        if not os.path.exists(virtEnvDir):
+            os.makedirs(virtEnvDir)
         return virtEnvDir
-    
-    def setupMAPClientVirtEnv(self):
-        virtEnvDir = self.initialiseVirtEnvLocation()
-        if self._pluginUpdater.locatePyenvScript():
-            try:
-                subprocess.check_call(['python', pyenvDir, virtEnvDir, 'MAPVirtEnv'])
-            except Exception as e:
-                logger.warning('Virtual environment setup failed - Dependencies cannot be installed automatically.')
-                logger.warning('Reason: ' + e)
+        
+    def setupMAPClientVirtEnv(self, env_dir):
+        from mapclient.widgets.dependency_installation import VESetup
+        self.dlg = VESetup(env_dir)
+        self.dlg.setModal(True)
+        self.dlg.show()
+        self.dlg.run()
+        self.dlg.exec()
+        return self.locateMAPClientVirtEnv(self.getVirtEnvLocation())
+        
+    def compareRequirements(self, required_installs, dependencies):
+        pythonExe = self.getVirtEnvLocation() + '\Scripts' + '\python.exe'
+        pipExe = self.getVirtEnvLocation() + '\Scripts' + '\pip.exe'
+        install_list_system = subprocess.check_output(['pip', 'list'])
+        install_list_system = install_list_system.decode('utf-8')
+        install_list_virtEnv = subprocess.check_output([pythonExe, pipExe, 'list'], shell=True)
+        install_list_virtEnv = install_list_virtEnv.decode('utf-8')
+        for dependency in dependencies.items():
+            if dependency[-1][-1] != 'None':
+                required_installs[dependency[0]] = []
+                for requirement in dependency[-1]:
+                    if requirement not in install_list_system and requirement not in install_list_virtEnv:
+                            required_installs[dependency[0]] += [requirement]
+        return required_installs
+        
+    def setupVEQuery(self):
+        msgBox = QtGui.QMessageBox()
+        msgBox.setWindowTitle('Application Virtual Environment')
+        msgBox.setText('In order to install plugin dependencies a virtual environment\nneeds to be set up for MAP Client.\n\nWould you like to set it up now?')
+        msgBox.setIcon(QtGui.QMessageBox.Question)
+        yesButton = msgBox.addButton('Yes', QtGui.QMessageBox.AcceptRole)
+        noButton = msgBox.addButton('No', QtGui.QMessageBox.RejectRole)
+        msgBox.exec()
+        
+        if msgBox.clickedButton() == yesButton:
+            return True
+        elif msgBox.clickedButton() == noButton:
+            return False
+        
+    def checkMissingDependencies(self, dependencies):
+        virtEnvExec = self.locateMAPClientVirtEnv(self.getVirtEnvLocation())
+        required_installs = {}
+        if not virtEnvExec:
+            if self.setupVEQuery():
+                if self.setupMAPClientVirtEnv(self.getVirtEnvLocation()):
+                    QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+                    required_installs = self.compareRequirements(required_installs, dependencies)
         else:
-            ret = QtGui.QMessageBox.warning(self, 'Script Not Found', '\nThe pyvenv.py script could not be located on your system.\nPlease locate this in the Advanced section of the Plugin Manager dialog.', QtGui.QMessageBox.Ok)
-    
-    def identifyDependencyUpdates(self, plugin_dependencies, virt_env):
-        pass
-    
-    def updateRequiredUpdateList(self, dependency_updates):
-        pass
+            QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+            required_installs = self.compareRequirements(required_installs, dependencies)
+        return required_installs
 
     def performWorkflowChecks(self, workflowDir):
+        QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
         wf = workflow._getWorkflowConfiguration(workflowDir)
-        if self.checkRequiredDependencies(wf):
-            self.installPluginDependencies(plugin_dependencies)
+        plugin_dependencies = self.checkRequiredDependencies(wf)
+        dependencies = {}
+        for info in plugin_dependencies.items():
+            if info[-1] != 'None':
+                dependencies[info[0]] = info[-1]
+        QtGui.QApplication.restoreOverrideCursor()
+        dependencies_to_install = self.checkMissingDependencies(dependencies)
         plugins = self.checkRequiredPlugins(wf)
-        if plugins:
+        if plugins or dependencies_to_install:
             QtGui.QApplication.restoreOverrideCursor()
-            self.showDownloadableContent(plugins)
+            self.showDownloadableContent(plugins, dependencies_to_install)
         
         pm = self._mainWindow.model().pluginManager()
         pm.load()
