@@ -115,7 +115,7 @@ class PluginUpdater:
         return self.checkResourcesFileContents(directory)
         
             
-    def locatePyenvScript(self):
+    def locatePyvenvScript(self):
         # Windows
         if os.path.isfile(os.path.join(sys.exec_prefix, 'Tools', 'scripts', 'pyvenv.py')):
             return os.path.join(sys.exec_prefix, 'Tools', 'scripts', 'pyvenv.py')

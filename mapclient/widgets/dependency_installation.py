@@ -139,7 +139,7 @@ class Install_Dependencies(PluginProgress):
         QtGui.QApplication.restoreOverrideCursor()
         python_dir = self._virt_env_dir + '\Scripts\python.exe'
         pip_dir = self._virt_env_dir + '\Scripts\pip.exe'
-        logs_dir = self._virt_env_dir[:-13] + 'logs'
+        logs_dir = self._virt_env_dir[:-13] + '\logs'
         
         self._ui.label.setText('Searching for packages in pip index...')
         self._ui.progressBar.setMaximum(len(self._packages_to_install))

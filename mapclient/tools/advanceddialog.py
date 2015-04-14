@@ -64,9 +64,9 @@ class AdvancedDialog(QDialog):
         if self._2to3Directory:
             self._ui.dir2to3.setText(self._2to3Directory)
             
-        self._pyvenvDirectory = self._pluginUpdater.locatePyenvScript()
-        if self._pyvenvDirectory:
-            self._ui.pyvenvDir.setText(self._pyvenvDirectory)
+        # will need ot modify
+        if self._ui.virtEnvLocation.text() == 'a':
+            self._ui.modifyVELocation.setText('Setup')
         
     def _makeConnections(self):
         self._ui.updateButton.clicked.connect(self.updatePlugins)
@@ -75,7 +75,6 @@ class AdvancedDialog(QDialog):
         self._ui.listWidget.itemSelectionChanged.connect(self._pluginSelectionChanged)
         self._ui.tabWidget.currentChanged.connect(self.fillUpdatesList)
         self._ui.locateButton.clicked.connect(self.locate2to3Script)
-        self._ui.locateButton_2.clicked.connect(self.locatePyvenvScript)
         self._ui.indentCheckBox.stateChanged.connect(self.indentSettings)
         self._ui.syntaxCheckBox.stateChanged.connect(self.syntaxSettings)
         self._ui.resourceCheckBox.stateChanged.connect(self.resourceSettings)
@@ -277,9 +276,6 @@ class AdvancedDialog(QDialog):
         
     def set2to3Location(self):
         self._2to3Directory = self._ui.dir2to3.text()
-    
-    def setPyvenvLocation(self):
-        self._pyvenvDirectory = self._ui.pyvenvDir.text()
         
     def setShowPluginErrors(self):
         self._doNotShowErrors = not self._ui.showPluginErrors.isChecked()
@@ -320,12 +316,6 @@ class AdvancedDialog(QDialog):
         if len(dir2to3Script[0]) > 0:
             self._ui.dir2to3.setText(dir2to3Script[0])
             self.set2to3Location()
-
-    def locatePyvenvScript(self):
-        dirPyvenvScript = QFileDialog.getOpenFileName(self, dir = sys.exec_prefix, filter='Python scripts (*.py *.pyw)', caption='Locate Script',  options=QFileDialog.DontResolveSymlinks | QFileDialog.ReadOnly)
-        if len(dirPyvenvScript[0]) > 0:
-            self._ui.pyvenvDir.setText(dirPyvenvScript[0])
-            self.setPyvenvLocation()
         
     def _pluginSelectionChanged(self):
         if len(self._ui.listWidget.selectedItems()) > 0 and len(self._ui.listWidget.selectedItems()) < self._ui.listWidget.count():
